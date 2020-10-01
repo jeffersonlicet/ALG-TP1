@@ -2,7 +2,6 @@
 -- Ejercicio 1
 -- Calcula el Modelo Exponencial Discreto
 ------------------
-
 med :: Float -> Float -> Int -> Float
 med i0 b n | n == 0 = i0
            | otherwise = (med i0 b (n-1)) * (1 + b)
@@ -11,7 +10,6 @@ med i0 b n | n == 0 = i0
 -- Ejercicio 2
 -- Calcula el Modelo Logistico Discreto
 ------------------
-
 mld :: Float -> Float -> Float -> Int -> Float
 mld p i0 b n
   | n == 0 = i0
@@ -23,7 +21,6 @@ mld p i0 b n
 -- Ejercicio 3
 -- Calcula el Modelo SIR Discreto
 ------------------
-
 sir :: (Float, Float, Float) -> Float -> Float -> Int -> (Float, Float, Float)
 sir (s0, i0, r0) b g n = (sanos, infectados, recuperados)
   where sanos = calcularSanos params
@@ -47,7 +44,6 @@ maxsir (s0, i0, r0) b g n = maxSir' (s0, i0, r0) b g n (takeSecond sirN)
 -- maxSir'
 -- Hace recursion desde n hasta 0 calculando sir(n) y conservando el máximo
 ------------------
-
 maxSir' :: (Float, Float, Float) -> Float -> Float -> Int -> Float -> Float
 maxSir' (s0, i0, r0) b g n max'
   | n == 0 = max'
