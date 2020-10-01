@@ -1,55 +1,98 @@
--- Enunciado 1
+------------------
+-- Ejercicio 1
 -- Calcula el Modelo Exponencial Discreto
--- f(i0, _, 0) = i0
--- f(i0, b, n) = f(i0, b, n-1) + f(i0, b, n-1) * b
+------------------
 
 med :: Float -> Float -> Int -> Float
 med i0 b n | n == 0 = i0
            | otherwise = (med i0 b (n-1)) * (1 + b)
 
--- Enunciado 2
+------------------
+-- Ejercicio 2
 -- Calcula el Modelo Logistico Discreto
--- b e (0, 1)
+------------------
 
 mld :: Float -> Float -> Float -> Int -> Float
 mld p i0 b n | n == 0 = i0
-             | otherwise = infectados * (1 + b * sanosN)
+             | otherwise = infectados * (1 + b * sanosAnteriores)
              where infectados = mld p i0 b (n - 1)
-                   sanosN = (p - infectados) / p
+                   sanosAnteriores = (p - infectados) / p
 
--- Enunciado 3 y 4
-calcInfectados :: (Float, Float, Float) -> Float -> Float -> Int -> Float
-calcInfectados (s0, i0, r0) b g n | n == 0 = i0
-                                  | otherwise = infectados * (1 + b * sanos - g)
-                                  where sanos = calcSanos (s0, i0, r0) b g i
-                                        infectados = calcInfectados (s0, i0, r0) b g i
-                                        i = n-1
-
-calcSanos :: (Float, Float, Float) -> Float -> Float -> Int -> Float
-calcSanos (s0, i0, r0) b g n | n == 0 = s0
-                             | otherwise = sanosPrev * (1 - b * infectados)
-                             where sanosPrev = calcSanos (s0, i0, r0) b g i
-                                   infectados = calcInfectados (s0, i0, r0) b g i
-                                   i = n-1
-
-calcRecuperados :: (Float, Float, Float) -> Float -> Float -> Int -> Float
-calcRecuperados (s0, i0, r0) b g n | n == 0 = r0
-                                   | otherwise = recuperados + g * infectados
-                                   where i = n-1
-                                         infectados = calcInfectados (s0, i0, r0) b g i
-                                         recuperados = calcRecuperados (s0, i0, r0) b g i
-
+------------------
+-- Ejercicio 3
+-- Calcula el Modelo SIR Discreto
+------------------
 
 sir :: (Float, Float, Float) -> Float -> Float -> Int -> (Float, Float, Float)
-sir (s0,i0,r0) b g n = (calcSanos (s0, i0, r0) b g n, calcInfectados (s0, i0, r0) b g n, calcRecuperados (s0, i0, r0) b g n)
+sir (s0, i0, r0) b g n = (sanos, infectados, recuperados)
+                       where sanos = calcularSanos params
+                             infectados = calcularInfectados params
+                             recuperados = calcularRecuperados params
+                             params = ((s0, i0, r0), b, g, n)
 
+------------------
+-- Ejercicio 4
+-- Calcula el Modelo SIR y retorna el maximo de infectados en n dias
+------------------
+maxsir :: (Float, Float, Float) -> Float -> Float -> Int -> Float
+maxsir (s0, i0, r0) b g n = maxSir' (s0, i0, r0) b g n (takeSecond sirN)
+                          where sirN = sir (s0, i0, r0) b g n
+
+------------------
+-- Funciones auxiliares
+------------------
+
+------------------
+-- maxSir'
+-- Hace recursion desde n hasta 0 calculando sir(n) y conservando el máximo
+------------------
+
+maxSir' :: (Float, Float, Float) -> Float -> Float -> Int -> Float -> Float
+maxSir' (s0, i0, r0) b g n max' | n == 0 = max'
+                                | otherwise = maxSir' (s0, i0, r0) b g (n-1) nuevoMax
+                                where sirAnterior = sir (s0, i0, r0) b g (n-1)
+                                      nuevoMax = maximum[takeSecond sirAnterior, max']
+
+------------------
+-- calcularInfectados
+-- Implementación de I(t) para el modelo SIR discreto
+-- Hace recursion sobre n hasta 0
+------------------
+calcularInfectados :: ((Float, Float, Float), Float, Float, Int) -> Float
+calcularInfectados ((s0, i0, r0), b, g, n) | n == 0 = i0
+                                  | otherwise = infectados * (1 + b * sanos - g)
+                                  where params = ((s0, i0, r0), b, g, n-1)
+                                        sanos = calcularSanos params
+                                        infectados = calcularInfectados params
+
+------------------
+-- calcularSanos
+-- Implementación de S(t) para el modelo SIR discreto
+-- Hace recursion sobre n hasta 0
+------------------
+calcularSanos :: ((Float, Float, Float), Float, Float, Int) -> Float
+calcularSanos ((s0, i0, r0), b, g, n) | n == 0 = s0
+                             | otherwise = sanosPrev * (1 - b * infectados)
+                             where params = ((s0, i0, r0), b, g, n-1)
+                                   sanosPrev = calcularSanos params
+                                   infectados = calcularInfectados params
+
+------------------
+-- calcularRecuperados
+-- Implementación de R(t) para el modelo SIR discreto
+-- Hace recursion sobre n hasta 0
+------------------
+calcularRecuperados :: ((Float, Float, Float), Float, Float, Int) -> Float
+calcularRecuperados ((s0, i0, r0), b, g, n) | n == 0 = r0
+                                            | otherwise = recuperados + g * infectados
+                                            where params = ((s0, i0, r0), b, g, n-1)
+                                                  infectados = calcularInfectados params
+                                                  recuperados = calcularRecuperados params
+
+------------------
+-- takeSecond
+-- Funcion de ayuda para deconstruir el vector de SIR
+-- Obtiene la segunda entrada de un vector de tres elementos
+------------------
 takeSecond :: (Float, Float, Float) -> Float
 takeSecond (_, p, _) = p
-
-maxsir_ :: (Float, Float, Float, Float, Float) -> Float -> Int -> Int -> Float
-maxsir_ (s0, i0, r0, b, g) currentMax i n | i == n = currentMax
-                                        | otherwise = maxsir_ (s0, i0, r0, b, g) max (i+1) n
-                                        where max = maximum[takeSecond (sir (s0, i0, r0) b g (i+1)), currentMax]
-
-maxsir :: (Float, Float, Float) -> Float -> Float -> Int -> Float
-maxsir (s0, i0, r0) b g n = maxsir_ (s0, i0, r0, b, g) (takeSecond (sir (s0, i0, r0) b g 0)) 0 n
