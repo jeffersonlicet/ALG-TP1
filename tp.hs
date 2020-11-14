@@ -4,7 +4,7 @@
 -}
 med :: Float -> Float -> Int -> Float
 med i0 b n | n == 0 = i0
-           | otherwise = (med i0 b (n-1)) * (1 + b)
+           | otherwise = med i0 b (n-1) * (1 + b)
 
 {-
   Ejercicio 2
@@ -22,11 +22,12 @@ mld p i0 b n
   Calcula el Modelo SIR Discreto
 -}
 sir :: (Float, Float, Float) -> Float -> Float -> Int -> (Float, Float, Float)
+sir (s0, i0, r0) _ _ 0 = (s0, i0, r0)
 sir (s0, i0, r0) b g n = (sanos, infectados, recuperados)
-  where params = ((s0, i0, r0), b, g, n)
-        sanos = calcularSanos params
-        infectados = calcularInfectados params
-        recuperados = calcularRecuperados params
+  where (sanosPrevios, infectadosPrevios, recuperadosPrevios) = sir (s0, i0, r0) b g (n-1)
+        sanos = sanosPrevios * (1 - b * infectadosPrevios)
+        recuperados = recuperadosPrevios + g * infectadosPrevios
+        infectados = infectadosPrevios * (1 + b * sanosPrevios - g)
 
 {-
   Ejercicio 4
@@ -50,45 +51,6 @@ maxSir' (s0, i0, r0) b g n max'
   | otherwise = maxSir' (s0, i0, r0) b g (n-1) nuevoMax
   where sirAnterior = sir (s0, i0, r0) b g (n-1)
         nuevoMax = maximo (takeSecond sirAnterior) max'
-
-{-
--- calcularInfectados
--- Implementación de I(t) para el modelo SIR discreto
--- Hace recursion sobre n hasta 0
--}
-calcularInfectados :: ((Float, Float, Float), Float, Float, Int) -> Float
-calcularInfectados ((s0, i0, r0), b, g, n)
-  | n == 0 = i0
-  | otherwise = infectados * (1 + b * sanos - g)
-  where params = ((s0, i0, r0), b, g, n-1)
-        sanos = calcularSanos params
-        infectados = calcularInfectados params
-
-{-
--- calcularSanos
--- Implementación de S(t) para el modelo SIR discreto
--- Hace recursion sobre n hasta 0
--}
-calcularSanos :: ((Float, Float, Float), Float, Float, Int) -> Float
-calcularSanos ((s0, i0, r0), b, g, n)
-  | n == 0 = s0
-  | otherwise = sanosPrev * (1 - b * infectados)
-  where params = ((s0, i0, r0), b, g, n-1)
-        sanosPrev = calcularSanos params
-        infectados = calcularInfectados params
-
-{-
--- calcularRecuperados
--- Implementación de R(t) para el modelo SIR discreto
--- Hace recursion sobre n hasta 0
--}
-calcularRecuperados :: ((Float, Float, Float), Float, Float, Int) -> Float
-calcularRecuperados ((s0, i0, r0), b, g, n)
-  | n == 0 = r0
-  | otherwise = recuperados + g * infectados
-  where params = ((s0, i0, r0), b, g, n-1)
-        infectados = calcularInfectados params
-        recuperados = calcularRecuperados params
 
 {-
 -- takeSecond
